@@ -15,7 +15,15 @@ log = logger.info
 debug = logger.debug
 
 
-class ServerConfigurationError(Exception):
+def split_hash(hash):
+	return hash[0:2], hash[2:4], hash
+
+
+class ServerError(Exception):
+	pass
+
+
+class ServerConfigurationError(ServerError):
 	pass
 
 
@@ -27,22 +35,22 @@ class NGDPCache:
 		self.domain = domain
 		self.basedir = os.path.join(basedir, domain)
 
-	def contains(self, key, hash):
-		path = os.path.join(self.basedir, key, hash)
+	def contains(self, key, name):
+		path = os.path.join(self.basedir, key, name)
 		return os.path.exists(path)
 
-	def get(self, key, hash):
-		path = os.path.join(self.basedir, key, hash)
+	def get(self, key, name):
+		path = os.path.join(self.basedir, key, name)
 		with open(path, "rb") as f:
 			return f.read()
 
-	def write(self, key, hash, data):
-		debug("write_to_cache(key=%r, data=%r, hash=%r", key, len(data), hash)
+	def write(self, key, name, data, hash):
+		debug("write_to_cache(key=%r, name=%r, data=%r, hash=%r", key, name, len(data), hash)
 		dirname = os.path.join(self.basedir, key)
 		if not os.path.exists(dirname):
 			# debug("mkdir %r", dirname)
 			os.makedirs(dirname)
-		fname = os.path.join(dirname, hash)
+		fname = os.path.join(dirname, name)
 		with open(fname, "wb") as f:
 			f.write(data)
 		log("Written %i bytes to %r" % (len(data), fname))
@@ -97,24 +105,41 @@ class NGDPConnection:
 	def _get_cached_csv(self, path):
 		if path not in self._obj_cache:
 			r = self.get(path)
-			self.cache.write("cdns", md5(r.content).hexdigest(), r.content)
+			hash = md5(r.content).hexdigest()
+			self.cache.write("cdns", hash, r.content, hash)
 			reader = csv.reader(StringIO(r.text), delimiter="|")
 			self._obj_cache[path] = self._parse_csv(reader)
 		return self._obj_cache[path]
 
-	def get_config(self, hash):
-		key = "config"
-		if not self.cache.contains(key, hash):
-			data = self.cdn_get("/config/{0}/{1}/{2}".format(hash[0:2], hash[2:4], hash))
-			self.cache.write(key, hash, data)
+	def get_or_cache(self, key, hash, name=None):
+		if name is None:
+			name = hash
+
+		if not self.cache.contains(key, name):
+			data = self.cdn_get("{0}/{1}/{2}/{3}".format(key, *split_hash(name)))
+			self.cache.write(key, name, data, hash)
 		else:
-			data = self.cache.get(key, hash)
+			data = self.cache.get(key, name)
+
+		return data
+
+	def get_config(self, hash):
+		data = self.get_or_cache("config", hash)
 		config = RawConfigParser()
 		config.readfp(StringIO("[DEFAULT]" + data.decode("utf-8")))
 		return dict(config["DEFAULT"])
 
+	def get_data(self, hash):
+		index = self.get_or_cache("data", hash, name=hash + ".index")
+		data = self.get_or_cache("data", hash)
+		return index, data
+
 	def cdn_get(self, path):
-		r = requests.get(self.cdn + path)
+		url = self.cdn + path
+		debug("GET %s", url)
+		r = requests.get(url)
+		if r.status_code != 200:
+			raise ServerError("Got HTTP %r when querying %r" % (r.status_code, url))
 		return r.content
 
 	def get(self, path):
@@ -132,6 +157,11 @@ def main():
 		build_name = v["VersionsName"]
 		print("Found build %s (%r)" % (build_name, build))
 		print(v)
+		print(v["CDNConfig"])
+		for archive in v["CDNConfig"]["archives"].split(" "):
+			conn.get_data(archive)
+
+		# print(conn.cdn, v["BuildConfig"]["install"])
 
 
 if __name__ == "__main__":
