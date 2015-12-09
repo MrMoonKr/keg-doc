@@ -3,7 +3,7 @@ import csv
 import logging
 import os
 import requests
-from configparser import RawConfigParser
+from collections import OrderedDict
 from io import StringIO
 from hashlib import md5
 
@@ -25,6 +25,57 @@ class ServerError(Exception):
 
 class ServerConfigurationError(ServerError):
 	pass
+
+
+class FlatINI(OrderedDict):
+	"""
+	An OrderedDict with optional multiple values per key.
+	Can read from a "flat ini" file.
+	"""
+	def readfp(self, f):
+		for line in f.readlines():
+			line = line.strip()
+			if not line or line.startswith("#"):
+				continue
+			key, sep, value = line.partition("=")
+			key = key.strip()
+			value = value.strip()
+			self[key] = value.strip()
+
+	def __setitem__(self, key, value):
+		if key in self:
+			if not isinstance(self[key], list):
+				super().__setitem__(key, [self[key]])
+			self[key].append(value)
+		else:
+			super().__setitem__(key, value)
+
+	def items(self):
+		for k, v in super().items():
+			if isinstance(v, list):
+				for item in v:
+					yield k, item
+			else:
+				yield k, v
+
+	def keys(self):
+		for k, v in super().items():
+			if isinstance(v, list):
+				for item in v:
+					yield k
+			else:
+				yield k
+
+	def values(self):
+		for k, v in super().values():
+			if isinstance(v, list):
+				for item in v:
+					yield item
+			else:
+				yield v
+
+	def __str__(self):
+		return "\n".join("{} = {}".format(k, v) for k, v in self.items())
 
 
 class NGDPCache:
@@ -125,14 +176,18 @@ class NGDPConnection:
 
 	def get_config(self, hash):
 		data = self.get_or_cache("config", hash)
-		config = RawConfigParser()
-		config.readfp(StringIO("[DEFAULT]" + data.decode("utf-8")))
-		return dict(config["DEFAULT"])
+		config = FlatINI()
+		config.readfp(StringIO(data.decode("utf-8")))
+		return config
 
 	def get_data(self, hash):
 		index = self.get_or_cache("data", hash, name=hash + ".index")
 		data = self.get_or_cache("data", hash)
 		return index, data
+
+	def get_patch(self, hash):
+		data = self.get_or_cache("patch", hash)
+		return data
 
 	def cdn_get(self, path):
 		url = self.cdn + path
@@ -156,12 +211,14 @@ def main():
 		build = v["BuildId"]
 		build_name = v["VersionsName"]
 		print("Found build %s (%r)" % (build_name, build))
-		print(v)
-		print(v["CDNConfig"])
 		for archive in v["CDNConfig"]["archives"].split(" "):
 			conn.get_data(archive)
 
-		# print(conn.cdn, v["BuildConfig"]["install"])
+		patch_ekey = v["BuildConfig"]["patch"]
+		conn.get_patch(patch_ekey)
+
+		patch_config = conn.get_config(v["BuildConfig"]["patch-config"])
+		assert patch_config["patch"] == patch_ekey
 
 
 if __name__ == "__main__":
