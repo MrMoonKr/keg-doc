@@ -1,0 +1,88 @@
+###
+# "REST Client" Extension 설치하세요.
+# 원하는 라인에 커서 위치 후 Send Request ( Ctrl + Alt + R ).
+###
+
+###
+# 테스트용
+###
+
+###
+GET http://www.google.co.kr
+
+###
+# 패치서버
+###
+
+###
+GET http://kr.patch.battle.net:1119/
+
+###
+# [CDNS]
+# Name|Path|Hosts|Servers|ConfigPath
+###
+
+###
+GET http://kr.patch.battle.net:1119/wow/cdns
+
+###
+# [Versions]
+# Region|BuildConfig|CDNConfig|KeyRing|BuildId|VersionName|ProductConfig
+###
+
+###
+GET http://kr.patch.battle.net:1119/wow/versions
+
+
+###
+# [CDN Configuration]
+# archives = ~~~
+# archives-index-size = ~~~
+# archive-group = ~~~
+# patch-archives = ~~~
+# patch-archives-index-size = ~~~
+# patch-archive-group = ~~~
+# file-index = ~
+# file-index-size = ~
+# patch-file-index = ~
+# patch-file-index-size = ~
+###
+
+###
+GET http://level3.blizzard.com/tpr/wow/config/f5/cc/f5ccb6574fbb89f7c9dda5db5431542d
+
+
+###
+# [Build Configuration]
+# root = 857c6b883ef13b8ceb99a8ac92b2c4c3
+# install = f28b5d8b2aeb8ffc1e19686e62cf44e7 d8e411af4f106e6e3e5059e9bfb899ee
+# install-size = 17014 16456
+# download = 1b87ca5533dcb444892df9f19001daef 007b5f81f7806587e5378f029043278f
+# download-size = 59023830 52486698
+# size = 703f342aca4d5328948d551ec2d28d81 ba4f6f185beb3dd25813fb9dbfc77692
+# size-size = 31819533 27711647
+# encoding = 31fc6fc11dad583b8ddfdfd58469b8d4 28258f40025cb29b064b92c51b568285
+# encoding-size = 129134783 125085269
+# patch = f78ba34a0782af766ba878613107049c
+# patch-size = 12017
+# patch-config = 9dbd78b04492249aa32a19583a231b86
+# build-name = WOW-42010patch9.1.5_Retail
+# build-uid = wow
+# build-product = WoW
+# build-playbuild-installer = ngdptool_casc2
+# build-partial-priority
+###
+
+###
+GET http://level3.blizzard.com/tpr/wow/config/f3/47/f34754af19831b97356c9b3542fc96e9
+
+
+###
+# Encoding
+#
+###
+
+###
+GET http://level3.blizzard.com/tpr/wow/data/28/25/28258f40025cb29b064b92c51b568285
+
+

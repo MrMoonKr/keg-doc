@@ -1,13 +1,32 @@
 # keg
 [![Build Status](https://api.travis-ci.org/HearthSim/keg.svg?branch=master)](https://travis-ci.org/HearthSim/keg)
 
-A library and client implementation of Blizzard's NGDP protocol.
+A library and client implementation of Blizzard's NGDP protocol.  
+NGDP = TACT for Web CDN + CASC for Local HDD
+
+## 용어정리
+
+- NGDP : Next Generation Distribution Platform.
+- TACT : Trustted Application Content Transfer.
+- CASC : Content Addressable Storage Container. 
+
+## 개발환경
+- Python 3.10.1
+- setuptools = setup.py + setup.cfg
+- venv
+```
+$ python -m venv venv-keg-doc
+$ ./venv-keg-doc/Scripts/Activate.ps1
+$ pip install .
+
+$ deactivate
+```
 
 
 ## Installation
 
-Python 3.6+ only.
-To install dependencies, go to the `keg` root directory and run `pip install .`.
+Python 3.6+ only.  
+To install dependencies, go to the `keg` root directory and run `pip install`.  
 Installing keg will install a `ngdp` program to your path.
 
 
